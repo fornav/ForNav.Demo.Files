@@ -35,7 +35,7 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
-                    FileService.ScanDir('', '*.*', true, TempFileDirectory);
+                    FileService.ScanDir('DEMOFILES:\', '*.*', true, TempFileDirectory);
                     if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetFilter(ShareDirectory, TempFileDirectory.LinkDirectory);
                     page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
@@ -101,6 +101,44 @@ page 50100 "ForNAV Files Demo"
                     FileService: Codeunit "ForNAV File Service";
                 begin
                     FileService.DeleteFile('DEMOFILES:\test.txt');
+                end;
+            }
+            action(ExportInvoices)
+            {
+                // This action will demonstrate how to loop through invoices and save them.
+                ApplicationArea = All;
+                Caption = 'Export Invoices';
+                ToolTip = 'Export invoices to files';
+                Image = ExportFile;
+
+                trigger OnAction()
+                var
+                    SalesInvHeader: Record "Sales Invoice Header";
+                    SalesInvHeader2: Record "Sales Invoice Header";
+                    FileService: Codeunit "ForNAV File Service";
+                    TempBlob: Codeunit "Temp Blob";
+                    TypeHelper: Codeunit "Type Helper";
+                    RecRef: RecordRef;
+                    InStr: InStream;
+                    OutStr: OutStream;
+                    FileNameLbl: Label '%1_%2.pdf', Comment = '%1 = Number; %2 = Name';
+                    FileName: Text;
+                    Count: Integer;
+                begin
+                    RecRef.Open(Database::"Sales Invoice Header");
+                    if SalesInvHeader.FindSet() then
+                        repeat
+                            Count += 1;
+                            Clear(TempBlob);
+                            OutStr := TempBlob.CreateOutStream();
+                            SalesInvHeader2.Setrange("No.", SalesInvHeader."No.");
+                            RecRef.Copy(SalesInvHeader2);
+                            Report.SaveAs(Report::"Standard Sales - Invoice", '', ReportFormat::Pdf, OutStr, RecRef);
+                            InStr := TempBlob.CreateInStream();
+                            FileName := StrSubstNo(FileNameLbl, SalesInvHeader."No.", SalesInvHeader."Sell-to Customer Name");
+                            FileName := TypeHelper.UrlEncode(FileName);
+                            FileService.WriteFromStream('DEMOFILES:\' + FileName, InStr);
+                        until (SalesInvHeader.Next() = 0) or (Count = 10);
                 end;
             }
         }
