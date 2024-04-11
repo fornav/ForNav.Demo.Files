@@ -55,6 +55,23 @@ page 50100 "ForNAV Files Demo"
                     FileService.WriteText('DEMOFILES:\test.txt', 'Hello world!', "ForNAV Encoding"::"utf-8", true);
                 end;
             }
+            action(WriteTextTwoDevices)
+            {
+                ApplicationArea = All;
+                Caption = 'Write Text File to two devices';
+                ToolTip = 'Write the test text file to two devices.';
+                Image = Export;
+
+                trigger OnAction()
+                var
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    FileService.SetDevice('DEVICE1');
+                    FileService.WriteText('DEMOFILES:\device1.txt', 'Hello device 1!', "ForNAV Encoding"::"utf-8", true);
+                    FileService.SetDevice('DEVICE2');
+                    FileService.WriteText('DEMOFILES:\device2.txt', 'Hello device 2!', "ForNAV Encoding"::"utf-8", true);
+                end;
+            }
             action(ReadText)
             {
                 ApplicationArea = All;
