@@ -26,7 +26,7 @@
   ],
   "screenshots": [],
   "platform": "1.0.0.0",
-  "application": "20.0.0.0",
+  "application": "19.0.0.0",
   "idRanges": [
     {
       "from": 50100,
@@ -38,7 +38,7 @@
     "allowDownloadingSource": true,
     "includeSourceInSymbolFile": true
   },
-  "runtime": "9.0",
+  "runtime": "8.1",
   "features": [
     "NoImplicitWith"
   ]

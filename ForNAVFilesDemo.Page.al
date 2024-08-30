@@ -24,11 +24,12 @@ page 50100 "ForNAV Files Demo"
     {
         area(Processing)
         {
-            action(ScanDir)
+            action(ScanDirSingle)
             {
                 ApplicationArea = All;
                 Image = Filed;
-                ToolTip = 'Scan directory';
+                Caption = 'Scan demo files';
+                ToolTip = 'Scan single directory';
 
                 trigger OnAction()
                 var
@@ -38,6 +39,97 @@ page 50100 "ForNAV Files Demo"
                     FileService.ScanDir('DEMOFILES:\', '*.*', true, TempFileDirectory);
                     if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetFilter(ShareDirectory, TempFileDirectory.LinkDirectory);
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirAll)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan all';
+                ToolTip = 'Scan all aliases';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    FileService.ScanDir('', '*.*', true, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirAllPdf)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan all PDFs';
+                ToolTip = 'Find all PDF files';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    FileService.ScanDir('', '*.*|*.pdf', true, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirFlat)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan all EUR PDFs';
+                ToolTip = 'Find all EUR PDF files';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    FileService.ScanDir('', '*eur*.pdf', true, TempFileDirectory);
+                    // if TempFileDirectory.FindFirst() then;
+                    // TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
+                    TempFileDirectory.SetRange(IsDirectory, false);
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirImages)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan all images';
+                ToolTip = 'Find all image files';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    FileService.ScanDir('', 't*.*;s*.?|*.gif;*.png;*.jpg;*.jpeg;*.bmp', true, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirRegex)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan with Regex';
+                ToolTip = 'Find with regular expression';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    FileService.ScanDir('', '@(?i-:)(\w{5,}$)|(\\$)|\\a[^\\]*$', true, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
                     page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
                 end;
             }
@@ -53,6 +145,46 @@ page 50100 "ForNAV Files Demo"
                     FileService: Codeunit "ForNAV File Service";
                 begin
                     FileService.WriteText('DEMOFILES:\test.txt', 'Hello world!', "ForNAV Encoding"::"utf-8", true);
+                end;
+            }
+            action(WriteTextBatch)
+            {
+                ApplicationArea = All;
+                Caption = 'Write Text Files in Batch';
+                ToolTip = 'Write the test text files as a batch.';
+                Image = Export;
+
+                trigger OnAction()
+                var
+                    FileService: Codeunit "ForNAV File Service";
+                    id1, id2 : Integer;
+                    text1, text2 : Text;
+                begin
+                    FileService.WriteTextTask('DEMOFILES:\test1.txt', 'Hello world!');
+                    FileService.WriteTextTask('DEMOFILES:\test2.txt', 'Hello again!');
+                    FileService.RunTasks();
+
+                    id1 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
+                    id2 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
+                    FileService.RunTasks();
+                    FileService.GetReadTextTaskResult(id1, text1);
+                    FileService.GetReadTextTaskResult(id2, text2);
+                    Message('File 1:\%1\\File 2:\%2', text1, text2);
+
+                    FileService.SetErrorAction("ForNAV File Error Action"::Ignore);
+                    id1 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
+                    id2 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
+                    FileService.RunTasks();
+                    if not FileService.GetReadTextTaskResult(id1, text1) then
+                        Message(FileService.GetTaskError(id1));
+                    if not FileService.GetReadTextTaskResult(id2, text2) then
+                        Message(FileService.GetTaskError(id2));
+                    if FileService.LastError() = '' then
+                        Message('File 1:\%1\\File 2:\%2', text1, text2);
+
+                    FileService.GetTaskError(id1);
+                    FileService.LastError()
+
                 end;
             }
             action(WriteTextTwoDevices)
@@ -147,11 +279,11 @@ page 50100 "ForNAV Files Demo"
                         repeat
                             Count += 1;
                             Clear(TempBlob);
-                            OutStr := TempBlob.CreateOutStream();
+                            TempBlob.CreateOutStream(OutStr);
                             SalesInvHeader2.Setrange("No.", SalesInvHeader."No.");
                             RecRef.Copy(SalesInvHeader2);
                             Report.SaveAs(Report::"Standard Sales - Invoice", '', ReportFormat::Pdf, OutStr, RecRef);
-                            InStr := TempBlob.CreateInStream();
+                            TempBlob.CreateInStream(InStr);
                             FileName := StrSubstNo(FileNameLbl, SalesInvHeader."No.", SalesInvHeader."Sell-to Customer Name");
                             FileName := TypeHelper.UrlEncode(FileName);
                             FileService.WriteFromStream('DEMOFILES:\' + FileName, InStr);
