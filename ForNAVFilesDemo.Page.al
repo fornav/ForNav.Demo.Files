@@ -24,6 +24,25 @@ page 50100 "ForNAV Files Demo"
     {
         area(Processing)
         {
+            action(ScanDirAliases)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan aliases';
+                ToolTip = 'Scan get a list of all aliases without files';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    // Get a list of aliases but without any files in the result.
+                    FileService.ScanDir('', '', false, TempFileDirectory);
+                    TempFileDirectory.SetRange(ShareDirectory, '');
+                    if TempFileDirectory.FindFirst() then;
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
             action(ScanDirSingle)
             {
                 ApplicationArea = All;
@@ -36,6 +55,7 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Get all the files in the DEMOFILES directory. All subdirectories are included.
                     FileService.ScanDir('DEMOFILES:\', '*.*', true, TempFileDirectory);
                     if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetFilter(ShareDirectory, TempFileDirectory.LinkDirectory);
@@ -54,6 +74,7 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Get all the files in all aliases. All subdirectories are included.
                     FileService.ScanDir('', '*.*', true, TempFileDirectory);
                     if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
@@ -72,6 +93,7 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Get all the PDF files in all aliases. All subdirectories are included.
                     FileService.ScanDir('', '*.*|*.pdf', true, TempFileDirectory);
                     if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
@@ -90,9 +112,10 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Get all the PDF files with 'eur' in then name in all aliases. All subdirectories are included.
                     FileService.ScanDir('', '*eur*.pdf', true, TempFileDirectory);
-                    // if TempFileDirectory.FindFirst() then;
                     // TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
+                    // if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetRange(IsDirectory, false);
                     page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
                 end;
@@ -109,9 +132,10 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
-                    FileService.ScanDir('', 't*.*;s*.?|*.gif;*.png;*.jpg;*.jpeg;*.bmp', true, TempFileDirectory);
-                    if TempFileDirectory.FindFirst() then;
+                    // Get all the image files in all aliases. All subdirectories are included.
+                    FileService.ScanDir('', '*.gif;*.png;*.jpg;*.jpeg;*.bmp', true, TempFileDirectory);
                     TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
+                    if TempFileDirectory.FindFirst() then;
                     page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
                 end;
             }
@@ -127,6 +151,8 @@ page 50100 "ForNAV Files Demo"
                     TempFileDirectory: Record "ForNAV File Directory" temporary;
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Get all the files with a name that starts with an 'a' or has a file extension of at least 5 characters.
+                    // (?i-:) is a case insensitive flag.
                     FileService.ScanDir('', '@(?i-:)(\w{5,}$)|(\\$)|\\a[^\\]*$', true, TempFileDirectory);
                     if TempFileDirectory.FindFirst() then;
                     TempFileDirectory.SetFilter(ShareDirectory, '%1', '');
@@ -144,6 +170,7 @@ page 50100 "ForNAV Files Demo"
                 var
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Write the text file to the DEMOFILES directory.
                     FileService.WriteText('DEMOFILES:\test.txt', 'Hello world!', "ForNAV Encoding"::"utf-8", true);
                 end;
             }
@@ -160,10 +187,12 @@ page 50100 "ForNAV Files Demo"
                     id1, id2 : Integer;
                     text1, text2 : Text;
                 begin
+                    // Write the text files to the DEMOFILES directory.
                     FileService.WriteTextTask('DEMOFILES:\test1.txt', 'Hello world!');
                     FileService.WriteTextTask('DEMOFILES:\test2.txt', 'Hello again!');
                     FileService.RunTasks();
 
+                    // Read the text files from the DEMOFILES directory.
                     id1 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
                     id2 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
                     FileService.RunTasks();
@@ -171,6 +200,7 @@ page 50100 "ForNAV Files Demo"
                     FileService.GetReadTextTaskResult(id2, text2);
                     Message('File 1:\%1\\File 2:\%2', text1, text2);
 
+                    // Get the error message from the task.
                     FileService.SetErrorAction("ForNAV File Error Action"::Ignore);
                     id1 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
                     id2 := FileService.ReadTextTask('DEMOFILES:\test1.txt');
@@ -184,7 +214,6 @@ page 50100 "ForNAV Files Demo"
 
                     FileService.GetTaskError(id1);
                     FileService.LastError()
-
                 end;
             }
             action(WriteTextTwoDevices)
@@ -198,6 +227,7 @@ page 50100 "ForNAV Files Demo"
                 var
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Write the text files to different devices.
                     FileService.SetDevice('DEVICE1');
                     FileService.WriteText('DEMOFILES:\device1.txt', 'Hello device 1!', "ForNAV Encoding"::"utf-8", true);
                     FileService.SetDevice('DEVICE2');
@@ -216,6 +246,7 @@ page 50100 "ForNAV Files Demo"
                     FileService: Codeunit "ForNAV File Service";
                     t: Text;
                 begin
+                    // Read the text file from the DEMOFILES directory.
                     FileService.SetErrorAction("ForNAV File Error Action"::Ignore);
                     t := FileService.ReadText('DEMOFILES:\test.txt', "ForNAV Encoding"::"utf-8");
                     if FileService.LastError() <> '' then
@@ -235,7 +266,8 @@ page 50100 "ForNAV Files Demo"
                 var
                     FileService: Codeunit "ForNAV File Service";
                 begin
-                    message(format(FileService.FileExist('DEMOFILES:\test.txt')));
+                    // Check if the test file exists in the DEMOFILES directory.
+                    Message(Format(FileService.FileExist('DEMOFILES:\test.txt')));
                 end;
             }
             action(DeleteFile)
@@ -249,6 +281,7 @@ page 50100 "ForNAV Files Demo"
                 var
                     FileService: Codeunit "ForNAV File Service";
                 begin
+                    // Delete the test file from the DEMOFILES directory.
                     FileService.DeleteFile('DEMOFILES:\test.txt');
                 end;
             }
