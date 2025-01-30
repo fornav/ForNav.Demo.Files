@@ -8,13 +8,25 @@ page 50100 "ForNAV Files Demo"
     {
         area(Content)
         {
-            group(GroupName)
+            group(General)
             {
                 field(Name; 'Welcome to ForNAV files demo')
                 {
                     ApplicationArea = All;
                     Caption = 'Name';
                     ToolTip = 'ForNAV files demo page';
+                }
+            }
+            group(Help)
+            {
+                field(ScanDirDoc; ScanDirHelpUrlLbl)
+                {
+                    ApplicationArea = All;
+                    Caption = 'ScanDir';
+                    ToolTip = 'Documentation for ScanDir';
+
+                    // AutoFormatType = Text;
+                    ExtendedDatatype = URL;
                 }
             }
         }
@@ -48,7 +60,7 @@ page 50100 "ForNAV Files Demo"
                 ApplicationArea = All;
                 Image = Filed;
                 Caption = 'Scan demo files';
-                ToolTip = 'Scan single directory';
+                ToolTip = 'Scan single directory with subdirectories';
 
                 trigger OnAction()
                 var
@@ -62,12 +74,69 @@ page 50100 "ForNAV Files Demo"
                     page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
                 end;
             }
+            action(ScanDirSingleNonRecursive)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan demo files - not recursive';
+                ToolTip = 'Scan single directory without subdirectories';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    // Get all the files in the DEMOFILES directory. All subdirectories are included.
+                    FileService.ScanDir('DEMOFILES:\', '*.*', false, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, TempFileDirectory.LinkDirectory);
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirPdfNonRecursive)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan demo PDF files - not recursive';
+                ToolTip = 'Scan single directory for PDF files without subdirectories';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    // Get all the files in the DEMOFILES directory. All subdirectories are included.
+                    FileService.ScanDir('DEMOFILES:\', '*.pdf', false, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, TempFileDirectory.LinkDirectory);
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
+            action(ScanDirPdfAndDirsNonRecursive)
+            {
+                ApplicationArea = All;
+                Image = Filed;
+                Caption = 'Scan demo PDF files and directories - not recursive';
+                ToolTip = 'Scan single directory for PDF files and all directories';
+
+                trigger OnAction()
+                var
+                    TempFileDirectory: Record "ForNAV File Directory" temporary;
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    // Get all the files in the DEMOFILES directory. All subdirectories are included.
+                    FileService.ScanDir('DEMOFILES:\', '*.*|*.pdf', false, TempFileDirectory);
+                    if TempFileDirectory.FindFirst() then;
+                    TempFileDirectory.SetFilter(ShareDirectory, TempFileDirectory.LinkDirectory);
+                    page.RunModal(Page::"ForNAV File Directory", TempFileDirectory);
+                end;
+            }
             action(ScanDirAll)
             {
                 ApplicationArea = All;
                 Image = Filed;
                 Caption = 'Scan all';
-                ToolTip = 'Scan all aliases';
+                ToolTip = 'Scan all aliases and directories';
 
                 trigger OnAction()
                 var
@@ -211,9 +280,6 @@ page 50100 "ForNAV Files Demo"
                         Message(FileService.GetTaskError(id2));
                     if FileService.LastError() = '' then
                         Message('File 1:\%1\\File 2:\%2', text1, text2);
-
-                    FileService.GetTaskError(id1);
-                    FileService.LastError()
                 end;
             }
             action(WriteTextTwoDevices)
@@ -285,6 +351,54 @@ page 50100 "ForNAV Files Demo"
                     FileService.DeleteFile('DEMOFILES:\test.txt');
                 end;
             }
+            action(CopyFiles)
+            {
+                ApplicationArea = All;
+                Caption = 'Copy files';
+                ToolTip = 'Creates error in copy operation';
+                Image = Delete;
+
+                trigger OnAction()
+                var
+                    FileService: Codeunit "ForNAV File Service";
+                begin
+                    // Set error action to ignore errors.
+                    FileService.SetErrorAction("ForNAV File Error Action"::Ignore);
+
+                    // Remove files from previous runs.
+                    FileService.DeleteFile('DEMOFILES:\original.txt');
+                    FileService.DeleteFile('DEMOFILES:\copy.txt');
+
+                    // Set action to raise errors.
+                    FileService.SetErrorAction("ForNAV File Error Action"::Error);
+
+                    // Create original file.
+                    FileService.WriteText('DEMOFILES:\original.txt', 'Hello world!');
+
+                    // Copy the file.
+                    FileService.Copy('DEMOFILES:\original.txt', 'DEMOFILES:\copy.txt');
+
+                    // Check if the copy operation was successful.
+                    if not FileService.FileExist('DEMOFILES:\copy.txt') then
+                        Error('Copy operation failed.');
+
+                    // Copy the file again to cause an error becaue the file already exists.
+                    FileService.SetErrorAction("ForNAV File Error Action"::Ignore);
+                    FileService.Copy('DEMOFILES:\original.txt', 'DEMOFILES:\copy.txt');
+                    if FileService.LastError() = '' then
+                        Error('Copy operation should have failed because the file already exists.');
+
+                    // Copy the file again without an error because we choose to overwrite the file.
+                    FileService.SetErrorAction("ForNAV File Error Action"::Error);
+                    FileService.Copy('DEMOFILES:\original.txt', 'DEMOFILES:\copy.txt', true);
+
+                    // Check if the copy operation was successful.
+                    if FileService.ReadText('DEMOFILES:\copy.txt', "ForNAV Encoding"::"utf-8") <> 'Hello world!' then
+                        Error('Copy operation failed. Content of file is not correct.');
+
+                    Message('Copy operation successful.');
+                end;
+            }
             action(ExportInvoices)
             {
                 // This action will demonstrate how to loop through invoices and save them.
@@ -325,4 +439,7 @@ page 50100 "ForNAV Files Demo"
             }
         }
     }
+
+    var
+        ScanDirHelpUrlLbl: Label 'https://docs.fornav.com/file-service/scan.html';
 }

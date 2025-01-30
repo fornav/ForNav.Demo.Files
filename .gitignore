@@ -16,3 +16,5 @@ rad.json
 *.g.xlf
 #License-file
 *.flf
+app.e4.json
+app.reportpack.json
